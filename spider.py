@@ -4,6 +4,8 @@ import os
 import pickledb
 import sys
 import json
+import pdb
+import shutil
 
 
 '''
@@ -51,19 +53,21 @@ def dump_results(results, results_path='./results'):
 
 def postprocess(results_path='./results', rewrite_db_path='rewrite.db'):
     pages = [
-        page.replace('.html', '') for page in os.listdir(results_path)
+        str(page.replace('.html', '')) for page in os.listdir(results_path)
         if '.html' in page and len(page) == 32+5]
     paths = [os.path.join(results_path, page + '.html') for page in pages]
     htmls = [open(path).read() for path in paths]
     rewrite_db = pickledb.load(rewrite_db_path, True)
     for page, html in zip(pages, htmls):
-        if rewrite_db.get(page) == None:
-            print 'What should the short form of', page, 'be?'
+        if not rewrite_db.get(page):
+            print 'What should the path of page {} be? If you\'d like the page to be the homepage, just write index.'.format(page)
             title_index = html.index('<title>')
-            print '[only alphanumeric characters please]'
+            print '[Only alphanumeric characters and hyphens please]'
             print html[title_index:title_index+150]
             short_url = str(raw_input(''))
             rewrite_db.set(page, short_url)
+        else:
+            print 'Page {} is already mapped to {} in pickledb. Consider deleting the DB contents if you want to erase this mapping (instructions on README.md).'.format(page, rewrite_db.get(page))
     for path, page, html in zip(paths, pages, htmls):
         print 'postprocessing', path, '...'
         processed_html = html[:].decode('utf8')
@@ -83,11 +87,18 @@ def generate_rewrites(results_path='./results', rewrite_db_path='rewrite.db'):
     rewrite_db = pickledb.load(rewrite_db_path, True)
     for page in pages:
         rewrite = {}
-        rewrite['source'] = '/' + rewrite_db.get(page)
-        rewrite['destination'] = '/' + page + '.html'
-        rewrites.append(rewrite)
+        new_page_path = rewrite_db.get(page)
+        if not new_page_path == 'index':
+            rewrite['source'] = '/' + new_page_path
+            rewrite['destination'] = '/' + page + '.html'
+            rewrites.append(rewrite)
+        else:
+            rename_index_html(new_page_path, page, results_path)
     return rewrites
 
+
+def rename_index_html(new_page_path, page, results_path):
+    shutil.move('{}/{}.html'.format(results_path, page), '{}/{}.html'.format(results_path, new_page_path))
 
 def run(root_page, results_path='./results'):
     results = notion_spider(root_page)

@@ -25,8 +25,15 @@ Then I found out that putting Notion pages in iframes would soon be deprecated f
 
 This project is a script you can run to turn your Notion page (and pages it links to, recursively) into static content which gets deployed on Firebase (with custom short links).
 
-
 ## Setup
+
+### Python environment (if you don't have Python 2.7)
+
+_*Disclaimer: If you already have Python 2.7, skip this section of the instructions.*_ 
+- [Download and install Miniconda](https://docs.conda.io/en/latest/miniconda.html) (a light version of Anaconda, a tool for managing Python versions and packages).
+- Create an environment for this application. It should have Python 2 and the required libraries for it to work (which are `selenium` and `pickledb`). An example command to issue would be `conda create -n notion-firebase python=2 selenium`. The environment name is configurable, it doesn't need to be `notion-firebase`.
+- Activate the new environment with `source activate notion-firebase`.
+- We have to install `pickledb` separately since the anaconda repositories don't have it. We can do it issuing the following command: `pip install pickledb`
 
 Install Docker for your OS: https://docs.docker.com/engine/getstarted/step_one
 

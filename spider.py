@@ -59,15 +59,17 @@ def postprocess(results_path='./results', rewrite_db_path='rewrite.db'):
     htmls = [open(path).read() for path in paths]
     rewrite_db = pickledb.load(rewrite_db_path, True)
     for page, html in zip(pages, htmls):
-        if not rewrite_db.get(page):
+        page_to_path_mapping = rewrite_db.get(page)
+        should_keep_page_to_path_mapping = True
+        if page_to_path_mapping:
+            should_keep_page_to_path_mapping = get_bool_from_prompt('Page {} is mapped to path {}. Would you like to keep this mapping? [y/N]'.format(page, page_to_path_mapping))
+        if not page_to_path_mapping or not should_keep_page_to_path_mapping:
             print 'What should the path of page {} be? If you\'d like the page to be the homepage, just write index.'.format(page)
             title_index = html.index('<title>')
             print '[Only alphanumeric characters and hyphens please]'
             print html[title_index:title_index+150]
             short_url = str(raw_input(''))
             rewrite_db.set(page, short_url)
-        else:
-            print 'Page {} is already mapped to {} in pickledb. Consider deleting the DB contents if you want to erase this mapping (instructions on README.md).'.format(page, rewrite_db.get(page))
     for path, page, html in zip(paths, pages, htmls):
         print 'postprocessing', path, '...'
         processed_html = html[:].decode('utf8')
@@ -79,12 +81,22 @@ def postprocess(results_path='./results', rewrite_db_path='rewrite.db'):
             handle.write(processed_html.encode('utf8'))
 
 
+def get_bool_from_prompt(prompt):
+    while True:
+        try:
+            meow = {"y": True, "n": False}[raw_input(prompt).lower()[0]]
+            return meow
+        except Exception:
+            print("Invalid input. Please enter y or n.")
+
+
 def generate_rewrites(results_path='./results', rewrite_db_path='rewrite.db'):
     rewrites = []
     pages = [
         page.replace('.html', '') for page in os.listdir(results_path)
         if '.html' in page and len(page) == 32+5]
     rewrite_db = pickledb.load(rewrite_db_path, True)
+    index_page_is_configured = False
     for page in pages:
         rewrite = {}
         new_page_path = rewrite_db.get(page)
@@ -93,7 +105,14 @@ def generate_rewrites(results_path='./results', rewrite_db_path='rewrite.db'):
             rewrite['destination'] = '/' + page + '.html'
             rewrites.append(rewrite)
         else:
+            index_page_is_configured = True
             rename_index_html(new_page_path, page, results_path)
+    if not index_page_is_configured:
+        try:
+            # Erase index.html if it's not configured.
+            os.remove('{}/index.html'.format(results_path))
+        except Exception:
+            print 'Failed to erase index.html from public folder, it probably didn\'t exist'
     return rewrites
 
 

@@ -70,7 +70,8 @@ def _destroy_selenium_container():
 def get_selenium_driver():
     _start_selenium_container()
     port_number = _get_selenium_container_port_number()
-    remote = 'http://localhost:' + port_number + '/wd/hub'
+    docker_machine_ip = raw_input('Where\'s your docker-machine hosted? (Hint: copy the IP your docker machine is using - should be localhost if using Docker Desktop, or some other private IP if using Toolbox))...')
+    remote = 'http://{}:'.format(docker_machine_ip) + port_number + '/wd/hub'
     driver = webdriver.Remote(
         remote, webdriver.DesiredCapabilities.CHROME.copy())
     if 'atexit_registered_destroy_selenium_container' not in globals():
